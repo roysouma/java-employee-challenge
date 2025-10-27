@@ -32,6 +32,11 @@ else
 fi
 
 echo ""
+echo "Ensuring mock server is stopped if it's running..."
+pkill -f "server:bootRun" 2>/dev/null || true
+lsof -ti:8112 | xargs kill -9 2>/dev/null || true
+sleep 3
+echo "✅ Mock server stopped (if it was running)"
 echo "2. Starting mock server..."
 ./gradlew server:bootRun --quiet &
 MOCK_SERVER_PID=$!
