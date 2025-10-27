@@ -1,11 +1,146 @@
 plugins {
     id 'project-conventions'
+    id 'jacoco'
 }
 
 dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.retry:spring-retry'
+    implementation 'org.springframework:spring-aspects'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'com.github.ben-manes.caffeine:caffeine'
+    
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'io.projectreactor:reactor-test'
 }
 
 springBoot {
     mainClass = 'com.reliaquest.api.ApiApplication'
 }
+
+test {
+    useJUnitPlatform()
+    
+    // Pass system properties from command line to test JVM
+    systemProperties System.getProperties()
+    
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = false
+        showExceptions = true
+        showCauses = true
+        showStackTraces = true
+        exceptionFormat = "full"
+    }
+    
+    afterSuite { desc, result ->
+        if (!desc.parent) {
+            println "\nTest Results: ${result.resultType} " +
+                    "(${result.testCount} tests, " +
+                    "${result.successfulTestCount} passed, " +
+                    "${result.failedTestCount} failed, " +
+                    "${result.skippedTestCount} skipped)"
+        }
+    }
+}
+
+task unitTest(type: Test) {
+    useJUnitPlatform()
+    exclude '**/integration/**'
+    exclude '**/*IntegrationTest*'
+    
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = false
+        showExceptions = true
+        showCauses = true
+        showStackTraces = true
+        exceptionFormat = "full"
+    }
+    
+    afterSuite { desc, result ->
+        if (!desc.parent) {
+            println "\nUnit Test Results: ${result.resultType} " +
+                    "(${result.testCount} tests, " +
+                    "${result.successfulTestCount} passed, " +
+                    "${result.failedTestCount} failed, " +
+                    "${result.skippedTestCount} skipped)"
+        }
+    }
+}
+
+task integrationTest(type: Test) {
+    useJUnitPlatform()
+    include '**/integration/**'
+    include '**/*IntegrationTest*'
+    
+    // Pass system properties from command line to test JVM
+    systemProperties System.getProperties()
+    
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = false
+        showExceptions = true
+        showCauses = true
+        showStackTraces = true
+        exceptionFormat = "full"
+    }
+    
+    afterSuite { desc, result ->
+        if (!desc.parent) {
+            println "\nIntegration Test Results: ${result.resultType} " +
+                    "(${result.testCount} tests, " +
+                    "${result.successfulTestCount} passed, " +
+                    "${result.failedTestCount} failed, " +
+                    "${result.skippedTestCount} skipped)"
+        }
+    }
+}
+
+jacoco {
+    toolVersion = "0.8.10"
+}
+
+integrationTest {
+    jacoco {
+        enabled = false
+    }
+}
+
+test {
+    jacoco {
+        enabled = false
+    }
+}
+
+unitTest {
+    jacoco {
+        enabled = true
+    }
+}
+
+jacocoTestReport {
+    dependsOn unitTest
+    executionData unitTest
+    sourceSets sourceSets.main
+    reports {
+        xml.required = false
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
+    }
+}
+
+task unitTestCoverage(type: JacocoReport) {
+    dependsOn unitTest
+    executionData unitTest
+    sourceSets sourceSets.main
+    reports {
+        xml.required = false
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco/unitTest/html')
+    }
+}
+
+unitTest.finalizedBy unitTestCoverage

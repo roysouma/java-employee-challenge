@@ -1,2 +1,31 @@
-spring.application.name: employee-api
-server.port: 8111
+server:
+  port: 8111
+
+employee:
+  api:
+    base-url: http://localhost:8112/api/v1/employee
+
+logging:
+  level:
+    com.reliaquest.api: DEBUG
+    org.springframework.retry: DEBUG
+    org.springframework.web.client.RestTemplate: DEBUG
+    org.springframework.cache: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/employee-api.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 30
+
+spring:
+  application:
+    name: employee-api
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=5m
+    cache-names: allEmployees,employeeById,employeeSearch,salaryCalculations
